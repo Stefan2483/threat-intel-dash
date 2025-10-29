@@ -2,7 +2,16 @@ import Parser from 'rss-parser';
 
 const parser = new Parser({
   customFields: {
-    item: ['description', 'content', 'content:encoded', 'pubDate']
+    item: [
+      'description',
+      'content',
+      'content:encoded',
+      'pubDate',
+      'media:content',
+      'media:thumbnail',
+      'enclosure',
+      'itunes:image'
+    ]
   },
   timeout: 10000,
   maxRedirects: 3
@@ -142,34 +151,75 @@ function isValidImageUrl(urlString) {
   try {
     const url = new URL(urlString);
 
+    // Only allow HTTPS
     if (url.protocol !== 'https:') {
       return false;
     }
 
-    const allowedDomains = [
-      'images.unsplash.com',
-      'unsplash.com',
-    ];
-
     const hostname = url.hostname.toLowerCase();
-    const isAllowed = allowedDomains.some(domain =>
-      hostname === domain || hostname.endsWith('.' + domain)
-    );
 
-    if (!isAllowed) {
-      return false;
-    }
-
-    const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
-    if (ipPattern.test(hostname)) {
-      return false;
-    }
-
+    // Block localhost and local domains
     if (hostname === 'localhost' || hostname.endsWith('.local')) {
       return false;
     }
 
-    return true;
+    // Block private IP addresses
+    const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (ipPattern.test(hostname)) {
+      const parts = hostname.split('.');
+      const first = parseInt(parts[0]);
+      const second = parseInt(parts[1]);
+
+      // Block private IP ranges: 10.x.x.x, 192.168.x.x, 172.16-31.x.x, 127.x.x.x
+      if (first === 10 || first === 127 ||
+          (first === 192 && second === 168) ||
+          (first === 172 && second >= 16 && second <= 31)) {
+        return false;
+      }
+    }
+
+    // Check if URL ends with common image extensions
+    const imageExtensions = /\.(jpg|jpeg|png|gif|webp|avif)(\?.*)?$/i;
+    if (imageExtensions.test(url.pathname)) {
+      return true;
+    }
+
+    // Allow known safe image hosting domains
+    const trustedImageDomains = [
+      'images.unsplash.com',
+      'unsplash.com',
+      'i.imgur.com',
+      'media.cnn.com',
+      'cdn.mos.cms.futurecdn.net',
+      'krebsonsecurity.com',
+      'www.bleepstatic.com',
+      'thehackernews.com',
+      'feeds.feedburner.com',
+      'isc.sans.edu'
+    ];
+
+    const isTrustedDomain = trustedImageDomains.some(domain =>
+      hostname === domain || hostname.endsWith('.' + domain)
+    );
+
+    if (isTrustedDomain) {
+      return true;
+    }
+
+    // Allow images from the same domain as the RSS feeds
+    const rssFeedDomains = [
+      'cisa.gov',
+      'thehackernews.com',
+      'krebsonsecurity.com',
+      'bleepingcomputer.com',
+      'sans.edu'
+    ];
+
+    const isRssFeedDomain = rssFeedDomains.some(domain =>
+      hostname === domain || hostname.endsWith('.' + domain)
+    );
+
+    return isRssFeedDomain;
   } catch {
     return false;
   }
@@ -241,11 +291,44 @@ export default async function handler(req, res) {
         const articles = feed.items.slice(0, 5).map((item, index) => {
           const imageIndex = (feedConfig.id * 5 + index) % placeholderImages.length;
 
-          let imageUrl = placeholderImages[imageIndex];
-          if (item.enclosure?.url) {
+          // Try to get image from RSS feed in order of preference
+          let imageUrl = null;
+
+          // 1. Check media:content or media:thumbnail (common in news feeds)
+          if (item['media:content']?.$ && item['media:content'].$.url) {
+            if (isValidImageUrl(item['media:content'].$.url)) {
+              imageUrl = item['media:content'].$.url;
+            }
+          }
+
+          // 2. Check enclosure (podcast/media attachments)
+          if (!imageUrl && item.enclosure?.url) {
             if (isValidImageUrl(item.enclosure.url)) {
               imageUrl = item.enclosure.url;
             }
+          }
+
+          // 3. Check itunes:image (common in some feeds)
+          if (!imageUrl && item.itunes?.image) {
+            if (isValidImageUrl(item.itunes.image)) {
+              imageUrl = item.itunes.image;
+            }
+          }
+
+          // 4. Check content:encoded or description for img tags
+          if (!imageUrl) {
+            const contentHtml = item['content:encoded'] || item.content || item.description || '';
+            const imgMatch = contentHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (imgMatch && imgMatch[1]) {
+              if (isValidImageUrl(imgMatch[1])) {
+                imageUrl = imgMatch[1];
+              }
+            }
+          }
+
+          // 5. Fallback to placeholder if no valid image found
+          if (!imageUrl) {
+            imageUrl = placeholderImages[imageIndex];
           }
 
           let link = '';
