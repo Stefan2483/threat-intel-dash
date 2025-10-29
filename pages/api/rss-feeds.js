@@ -189,7 +189,9 @@ function isValidImageUrl(urlString) {
       'www.bleepstatic.com',
       'thehackernews.com',
       'feeds.feedburner.com',
-      'isc.sans.edu'
+      'isc.sans.edu',
+      'blogger.googleusercontent.com',
+      'blogspot.com'
     ];
 
     const isTrustedDomain = trustedImageDomains.some(domain =>
