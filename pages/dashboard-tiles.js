@@ -10,8 +10,8 @@ export default function DashboardTiles() {
   return (
     <>
       <Head>
-        <title>Oblivion Threat Intel - Tiles Version</title>
-        <meta name="description" content="Threat Intelligence Dashboard with Tiles and Map" />
+        <title>Threat Intelligence Dashboard</title>
+        <meta name="description" content="Real-time cybersecurity threat intelligence from multiple sources" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <OblivionDashboardTiles />
