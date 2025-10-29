@@ -295,38 +295,69 @@ export default async function handler(req, res) {
           let imageUrl = null;
 
           // 1. Check media:content or media:thumbnail (common in news feeds)
-          if (item['media:content']?.$ && item['media:content'].$.url) {
-            if (isValidImageUrl(item['media:content'].$.url)) {
-              imageUrl = item['media:content'].$.url;
+          // Handle both array and object formats
+          if (!imageUrl && item['media:content']) {
+            let mediaContent = item['media:content'];
+            // If it's an array, get the first item
+            if (Array.isArray(mediaContent)) {
+              mediaContent = mediaContent[0];
+            }
+            // Check for url in $ property or direct url
+            const url = mediaContent?.$?.url || mediaContent?.url;
+            if (url && isValidImageUrl(url)) {
+              imageUrl = url;
             }
           }
 
-          // 2. Check enclosure (podcast/media attachments)
+          // 2. Check media:thumbnail
+          if (!imageUrl && item['media:thumbnail']) {
+            let mediaThumbnail = item['media:thumbnail'];
+            if (Array.isArray(mediaThumbnail)) {
+              mediaThumbnail = mediaThumbnail[0];
+            }
+            const url = mediaThumbnail?.$?.url || mediaThumbnail?.url;
+            if (url && isValidImageUrl(url)) {
+              imageUrl = url;
+            }
+          }
+
+          // 3. Check enclosure (podcast/media attachments)
           if (!imageUrl && item.enclosure?.url) {
             if (isValidImageUrl(item.enclosure.url)) {
               imageUrl = item.enclosure.url;
             }
           }
 
-          // 3. Check itunes:image (common in some feeds)
+          // 4. Check itunes:image (common in some feeds)
           if (!imageUrl && item.itunes?.image) {
             if (isValidImageUrl(item.itunes.image)) {
               imageUrl = item.itunes.image;
             }
           }
 
-          // 4. Check content:encoded or description for img tags
+          // 5. Check content:encoded or description for img tags
+          // Get ALL images and try to find unique ones per article
           if (!imageUrl) {
             const contentHtml = item['content:encoded'] || item.content || item.description || '';
-            const imgMatch = contentHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
-            if (imgMatch && imgMatch[1]) {
-              if (isValidImageUrl(imgMatch[1])) {
-                imageUrl = imgMatch[1];
+            // Find all img tags, not just the first one
+            const imgMatches = contentHtml.matchAll(/<img[^>]+src=["']([^"']+)["']/gi);
+            const foundImages = [];
+
+            for (const match of imgMatches) {
+              if (match[1] && isValidImageUrl(match[1])) {
+                foundImages.push(match[1]);
               }
+            }
+
+            // If we found multiple images, try to vary which one we use per article
+            if (foundImages.length > 0) {
+              // Use modulo to cycle through available images
+              const imageSelectIndex = index % foundImages.length;
+              imageUrl = foundImages[imageSelectIndex];
             }
           }
 
-          // 5. Fallback to placeholder if no valid image found
+          // 6. Fallback to placeholder if no valid image found
           if (!imageUrl) {
             imageUrl = placeholderImages[imageIndex];
           }
