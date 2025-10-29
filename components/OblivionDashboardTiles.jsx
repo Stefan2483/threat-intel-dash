@@ -263,7 +263,7 @@ export default function ThreatIntelDashboard() {
             </div>
 
             <div className="text-right">
-              <div className="text-2xl font-bold text-cyan-400 tabular-nums" style={{ textShadow: '0 0 20px rgba(0, 217, 255, 0.8)' }}>
+              <div className="text-2xl font-bold text-cyan-400 tabular-nums" style={{ textShadow: '0 0 20px rgba(0, 217, 255, 0.8)' }} suppressHydrationWarning>
                 {formatTime(currentTime)}
               </div>
               {(() => {
