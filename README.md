@@ -2,6 +2,8 @@
 
 > An Oblivion movie-inspired cybersecurity threat intelligence dashboard for reading RSS feeds in a visually stunning way. Perfect for big screen displays, security operations centers, or just staying informed on the latest cybersecurity news with style.
 
+![Threat Intelligence Dashboard](screenshot.png)
+
 ## Overview
 
 This is a cutting-edge, cinematic threat intelligence dashboard that transforms mundane RSS feed reading into an immersive cyberpunk experience. Inspired by the futuristic UI from the Oblivion movie, it displays real-time cybersecurity news from major sources with stunning visual effects including CRT scan lines, holographic elements, animated grids, and typewriter text rendering.
