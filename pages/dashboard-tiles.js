@@ -1,24 +1,5 @@
 import Head from 'next/head';
-import dynamic from 'next/dynamic';
-
-const OblivionDashboardTiles = dynamic(
-  () => import('../components/OblivionDashboardTiles'),
-  {
-    ssr: false,
-    loading: () => (
-      <div style={{
-        minHeight: '100vh',
-        background: 'black',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#00d9ff'
-      }}>
-        <div>Loading Dashboard...</div>
-      </div>
-    )
-  }
-);
+import OblivionDashboardTiles from '../components/OblivionDashboardTiles';
 
 export default function DashboardTiles() {
   return (
