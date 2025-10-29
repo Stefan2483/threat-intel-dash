@@ -151,26 +151,22 @@ function isValidImageUrl(urlString) {
   try {
     const url = new URL(urlString);
 
-    // Only allow HTTPS
     if (url.protocol !== 'https:') {
       return false;
     }
 
     const hostname = url.hostname.toLowerCase();
 
-    // Block localhost and local domains
     if (hostname === 'localhost' || hostname.endsWith('.local')) {
       return false;
     }
 
-    // Block private IP addresses
     const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
     if (ipPattern.test(hostname)) {
       const parts = hostname.split('.');
       const first = parseInt(parts[0]);
       const second = parseInt(parts[1]);
 
-      // Block private IP ranges: 10.x.x.x, 192.168.x.x, 172.16-31.x.x, 127.x.x.x
       if (first === 10 || first === 127 ||
           (first === 192 && second === 168) ||
           (first === 172 && second >= 16 && second <= 31)) {
@@ -178,13 +174,11 @@ function isValidImageUrl(urlString) {
       }
     }
 
-    // Check if URL ends with common image extensions
     const imageExtensions = /\.(jpg|jpeg|png|gif|webp|avif)(\?.*)?$/i;
     if (imageExtensions.test(url.pathname)) {
       return true;
     }
 
-    // Allow known safe image hosting domains
     const trustedImageDomains = [
       'images.unsplash.com',
       'unsplash.com',
@@ -206,7 +200,6 @@ function isValidImageUrl(urlString) {
       return true;
     }
 
-    // Allow images from the same domain as the RSS feeds
     const rssFeedDomains = [
       'cisa.gov',
       'thehackernews.com',
@@ -291,25 +284,19 @@ export default async function handler(req, res) {
         const articles = feed.items.slice(0, 5).map((item, index) => {
           const imageIndex = (feedConfig.id * 5 + index) % placeholderImages.length;
 
-          // Try to get image from RSS feed in order of preference
           let imageUrl = null;
 
-          // 1. Check media:content or media:thumbnail (common in news feeds)
-          // Handle both array and object formats
           if (!imageUrl && item['media:content']) {
             let mediaContent = item['media:content'];
-            // If it's an array, get the first item
             if (Array.isArray(mediaContent)) {
               mediaContent = mediaContent[0];
             }
-            // Check for url in $ property or direct url
             const url = mediaContent?.$?.url || mediaContent?.url;
             if (url && isValidImageUrl(url)) {
               imageUrl = url;
             }
           }
 
-          // 2. Check media:thumbnail
           if (!imageUrl && item['media:thumbnail']) {
             let mediaThumbnail = item['media:thumbnail'];
             if (Array.isArray(mediaThumbnail)) {
@@ -321,25 +308,20 @@ export default async function handler(req, res) {
             }
           }
 
-          // 3. Check enclosure (podcast/media attachments)
           if (!imageUrl && item.enclosure?.url) {
             if (isValidImageUrl(item.enclosure.url)) {
               imageUrl = item.enclosure.url;
             }
           }
 
-          // 4. Check itunes:image (common in some feeds)
           if (!imageUrl && item.itunes?.image) {
             if (isValidImageUrl(item.itunes.image)) {
               imageUrl = item.itunes.image;
             }
           }
 
-          // 5. Check content:encoded or description for img tags
-          // Get ALL images and try to find unique ones per article
           if (!imageUrl) {
             const contentHtml = item['content:encoded'] || item.content || item.description || '';
-            // Find all img tags, not just the first one
             const imgMatches = contentHtml.matchAll(/<img[^>]+src=["']([^"']+)["']/gi);
             const foundImages = [];
 
@@ -349,15 +331,12 @@ export default async function handler(req, res) {
               }
             }
 
-            // If we found multiple images, try to vary which one we use per article
             if (foundImages.length > 0) {
-              // Use modulo to cycle through available images
               const imageSelectIndex = index % foundImages.length;
               imageUrl = foundImages[imageSelectIndex];
             }
           }
 
-          // 6. Fallback to placeholder if no valid image found
           if (!imageUrl) {
             imageUrl = placeholderImages[imageIndex];
           }
