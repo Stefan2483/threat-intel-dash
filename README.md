@@ -35,20 +35,13 @@ This is a cutting-edge, cinematic threat intelligence dashboard that transforms 
 - **Cyberpunk Date Display**: D/M/Y/W format with futuristic styling
 - **Floating Particles**: Ambient visual effects
 
-### Two Dashboard Versions
-1. **Tiles Version** (Default):
-   - Modern tile-based layout
-   - Auto-play with synchronized progress bars (ARTICLE, SOURCE, FEED)
-   - Play/pause controls
-   - Bottom info tiles with threat statistics
-   - Blinking "READ ARTICLE" button
-   - CRT effects on article images
-
-2. **Markup Version**:
-   - Classic terminal-style interface
-   - Numbered article lists by source
-   - Three-column layout (Feed List | Article Reader | Metadata)
-   - Live RSS source indicator
+### Dashboard Features
+- Modern tile-based layout
+- Auto-play with synchronized progress bars (ARTICLE, SOURCE, FEED)
+- Play/pause controls
+- Bottom info tiles with threat statistics
+- Blinking "READ ARTICLE" button
+- CRT effects on article images
 
 ### Interactive Features
 - Click "READ ARTICLE" button to open full articles in new tab
@@ -199,13 +192,11 @@ vercel --prod
 ```
 threat-intel-dash/
 ├── components/
-│   ├── OblivionDashboardTiles.jsx      # Main tiles dashboard with CRT effects
-│   └── OblivionThreatIntelMarkup.jsx   # Classic markup version
+│   └── OblivionDashboardTiles.jsx      # Main dashboard component with CRT effects
 ├── pages/
 │   ├── _app.js                         # Next.js app wrapper
-│   ├── index.js                        # Landing page with version selector
-│   ├── dashboard-tiles.js              # Tiles dashboard page (default)
-│   ├── dashboard-markup.js             # Markup dashboard page
+│   ├── index.js                        # Landing page (auto-redirects to dashboard)
+│   ├── dashboard-tiles.js              # Main dashboard page
 │   └── api/
 │       └── rss-feeds.js                # Server-side RSS feed fetcher
 ├── lib/
