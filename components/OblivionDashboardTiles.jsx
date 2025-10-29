@@ -18,8 +18,18 @@ export default function ThreatIntelDashboard() {
   const [totalArticlesInFeed, setTotalArticlesInFeed] = useState(0);
   const [tileDisplayProgress, setTileDisplayProgress] = useState(0);
   const [tilesVisible, setTilesVisible] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [imageSrc, setImageSrc] = useState('');
 
   const { feeds, loading, error, lastUpdated } = useRSSFeeds();
+
+  const placeholderImages = [
+    'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&h=300&fit=crop',
+    'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400&h=300&fit=crop'
+  ];
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -30,6 +40,21 @@ export default function ThreatIntelDashboard() {
     const blinker = setInterval(() => setBlinkState(prev => !prev), 800);
     return () => clearInterval(blinker);
   }, []);
+
+  useEffect(() => {
+    if (selectedArticle?.image) {
+      setImageError(false);
+      setImageSrc(selectedArticle.image);
+    }
+  }, [selectedArticle]);
+
+  const handleImageError = () => {
+    if (!imageError && selectedArticle) {
+      setImageError(true);
+      const randomIndex = Math.floor(Math.random() * placeholderImages.length);
+      setImageSrc(placeholderImages[randomIndex]);
+    }
+  };
 
 
   const getAllArticles = () => feeds.flatMap(feed => feed.articles);
@@ -538,7 +563,7 @@ export default function ThreatIntelDashboard() {
               {/* Image */}
               <div className="h-1/2 border-b border-cyan-500/30 relative overflow-hidden bg-black">
                 <>
-                  <img src={selectedArticle.image} alt={selectedArticle.title} className="w-full h-full object-cover" />
+                  <img key={imageSrc} src={imageSrc} alt={selectedArticle.title} className="w-full h-full object-cover" onError={handleImageError} />
 
                   {/* CRT Scan Lines Effect - Horizontal */}
                   <div className="absolute inset-0 pointer-events-none z-20"

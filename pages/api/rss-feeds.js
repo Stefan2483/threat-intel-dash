@@ -268,7 +268,9 @@ export default async function handler(req, res) {
     });
   }
 
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   try {
     const feedPromises = RSS_FEEDS.map(async (feedConfig) => {
@@ -284,11 +286,9 @@ export default async function handler(req, res) {
         ];
 
         const articles = feed.items.slice(0, 5).map((item, index) => {
-          const imageIndex = (feedConfig.id * 5 + index) % placeholderImages.length;
-
           let imageUrl = null;
 
-          if (!imageUrl && item['media:content']) {
+          if (item['media:content']) {
             let mediaContent = item['media:content'];
             if (Array.isArray(mediaContent)) {
               mediaContent = mediaContent[0];
@@ -334,13 +334,13 @@ export default async function handler(req, res) {
             }
 
             if (foundImages.length > 0) {
-              const imageSelectIndex = index % foundImages.length;
-              imageUrl = foundImages[imageSelectIndex];
+              imageUrl = foundImages[0];
             }
           }
 
           if (!imageUrl) {
-            imageUrl = placeholderImages[imageIndex];
+            const placeholderIndex = (feedConfig.id * 7 + index * 3) % placeholderImages.length;
+            imageUrl = placeholderImages[placeholderIndex];
           }
 
           let link = '';
